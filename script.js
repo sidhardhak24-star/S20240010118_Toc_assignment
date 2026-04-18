@@ -17,24 +17,64 @@ const MACHINES = {
     }
   },
  
-  mul: {
+mul: {
     name: 'Unary Multiplication',
-    desc: 'Multiplies two unary numbers separated by B.\n\nTry: aaBaaa  →  aaaaaa  (2 × 3 = 6)\n\nHow it works: For each a in group 1 (marked X), copy all b\'s (marked Y) as c\'s. After all a\'s processed, convert c\'s to a\'s.',
+    desc: 'Multiplies two unary numbers separated by B.\n\nTry: aaBaa  →  aaaa  (2 × 2 = 4)\n     aaaBaa →  aaaaaa  (3 × 2 = 6)\n\nHow it works:\n1. Mark one "a" from group 1 as X.\n2. Copy every "a" from group 2 to the end as "c" (marking each group-2 "a" as Y temporarily).\n3. Restore Y→a, return to pick the next group-1 "a".\n4. Repeat until all group-1 "a"s are consumed.\n5. Erase everything before the c-block; convert c→a.',
     start: 'q0', acc: 'q_accept', rej: 'q_reject',
     tr: {
-      'q0,a': ['q1','X','R'], 'q0,X': ['q0','X','R'], 'q0,B': ['q5','B','R'],
-      'q1,a': ['q1','a','R'], 'q1,B': ['q2','B','R'],
-      'q2,b': ['q3','Y','R'], 'q2,Y': ['q2','Y','R'],
-      'q2,c': ['q2','c','R'], 'q2,_': ['q4','_','L'],
-      'q3,b': ['q3','b','R'], 'q3,Y': ['q3','Y','R'],
-      'q3,c': ['q3','c','R'], 'q3,_': ['q4','c','L'],
-      'q4,c': ['q4','c','L'], 'q4,Y': ['q2','Y','R'],
-      'q4,b': ['q4','b','L'], 'q4,B': ['q4','B','L'],
-      'q4,a': ['q4','a','L'], 'q4,X': ['q0','X','R'],
-      'q5,b': ['q5','_','R'], 'q5,c': ['q6','a','R'], 'q5,_': ['q_accept','_','S'],
-      'q6,c': ['q6','a','R'], 'q6,_': ['q_accept','_','S']
+      // PHASE 1: Find next unmarked 'a' in group 1 and mark it X
+      'q0,a': ['q1', 'X', 'R'],   // mark this group-1 'a', go copy group 2
+      'q0,X': ['q0', 'X', 'R'],   // skip already-marked group-1 'a's
+      'q0,B': ['q7', '_', 'R'],   // no more group-1 'a's → cleanup phase
+      'q0,_': ['q_accept', '_', 'S'], // empty input edge case
+
+      // PHASE 2: Scan right past group 1 and B to reach group 2
+      'q1,a': ['q1', 'a', 'R'],
+      'q1,X': ['q1', 'X', 'R'],
+      'q1,B': ['q2', 'B', 'R'],   // crossed the separator
+
+      // PHASE 3: In group 2 — find next unmarked 'a', mark as Y, go write a 'c'
+      'q2,a': ['q3', 'Y', 'R'],   // mark this group-2 'a' as Y, go write 'c'
+      'q2,Y': ['q2', 'Y', 'R'],   // skip already-marked group-2 'a's
+      'q2,_': ['q5', '_', 'L'],   // all group-2 'a's copied for this round → restore Y
+      'q2,c': ['q2', 'c', 'R'],   // skip already-written c's
+
+      // PHASE 4: Scan to end of tape to write a 'c'
+      'q3,a': ['q3', 'a', 'R'],
+      'q3,Y': ['q3', 'Y', 'R'],
+      'q3,c': ['q3', 'c', 'R'],
+      'q3,_': ['q4', 'c', 'L'],   // write 'c' at end
+
+      // PHASE 4b: Return leftward back into group 2 to the Y we just passed
+      'q4,c': ['q4', 'c', 'L'],
+      'q4,a': ['q4', 'a', 'L'],
+      'q4,Y': ['q2', 'Y', 'R'],   // found the Y; step right to continue scanning group 2
+
+      // PHASE 5: Restore all Y→a in group 2, then return to group 1
+      'q5,Y': ['q5', 'a', 'L'],   // restore Y back to 'a'
+      'q5,a': ['q5', 'a', 'L'],
+      'q5,c': ['q5', 'c', 'L'],
+      'q5,B': ['q6', 'B', 'L'],   // crossed back over separator
+
+      // PHASE 6: Scan left to leftmost X to pick next group-1 'a'
+      'q6,a': ['q6', 'a', 'L'],
+      'q6,X': ['q0', 'X', 'R'],   // found an X; restart from q0 to find next group-1 'a'
+      'q6,_': ['q0', '_', 'R'],
+
+      // PHASE 7: Cleanup — erase everything up to the c-block
+      'q7,X': ['q7', '_', 'R'],
+      'q7,a': ['q7', '_', 'R'],
+      'q7,B': ['q7', '_', 'R'],
+      'q7,Y': ['q7', '_', 'R'],
+      'q7,c': ['q8', 'a', 'R'],   // first 'c' found → convert to 'a'
+      'q7,_': ['q_accept', '_', 'S'], // nothing to convert (0 × n = 0)
+
+      // PHASE 8: Convert remaining c→a
+      'q8,c': ['q8', 'a', 'R'],
+      'q8,_': ['q_accept', '_', 'S']
     }
   },
+  
  
   abc: {
     name: 'aⁿbⁿcⁿ Language Acceptor',
