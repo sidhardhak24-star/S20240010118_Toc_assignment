@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Turing Machine Simulator</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+ 
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">TM</div>
+        <div>
+          <h1>Turing Machine Simulator</h1>
+          <p>Theory of Computation — Interactive Academic Project</p>
+        </div>
+      </div>
+      <div class="badges">
+        <span class="badge gold">Infinite Tape</span>
+        <span class="badge blue">Step Execution</span>
+        <span class="badge gold">Decidability</span>
+      </div>
+    </div>
+  </header>
+ 
+  <main class="page">
+ 
+    <div class="tabs-bar">
+      <button class="tab active" data-tab="sim">Simulator</button>
+      <button class="tab" data-tab="custom">Custom Machine</button>
+      <button class="tab" data-tab="dec">Decidability Visualizer</button>
+    </div>
+ 
+    <!-- SIMULATOR TAB -->
+    <section class="tab-panel active" id="tab-sim">
+      <div class="grid2">
+ 
+        <div class="card">
+          <div class="card-head">Machine Setup</div>
+          <label>Choose Machine</label>
+          <select id="msel">
+            <option value="add">Unary Addition</option>
+            <option value="mul">Unary Multiplication</option>
+            <option value="abc">aⁿbⁿcⁿ Language Acceptor</option>
+          </select>
+          <label>Input String</label>
+          <input type="text" id="inp" placeholder="e.g. aaaBaa, aaBaaa, aabbcc" />
+          <div class="btn-row">
+            <button class="btn blue" id="loadBtn">Load Machine</button>
+            <button class="btn gold" id="resetBtn">Reset</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn blue" id="stepBtn">Step →</button>
+            <button class="btn gold" id="runBtn">Run ▶</button>
+            <button class="btn outline" id="stopBtn">Stop ■</button>
+          </div>
+          <div class="speed-row">
+            <label>Speed <span id="spdVal" class="speed-val">600ms</span></label>
+            <input type="range" id="spd" min="100" max="1500" step="100" value="600" />
+            <p class="hint">Lower = faster</p>
+          </div>
+          <div class="desc-box" id="desc">Load a machine to see its description.</div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-head">Status</div>
+          <div class="stats-grid">
+            <div class="stat"><span class="stat-lbl">Current State</span><span class="stat-val" id="stState">—</span></div>
+            <div class="stat"><span class="stat-lbl">Head Position</span><span class="stat-val" id="stHead">—</span></div>
+            <div class="stat"><span class="stat-lbl">Symbol Under Head</span><span class="stat-val" id="stSym">—</span></div>
+            <div class="stat"><span class="stat-lbl">Machine Status</span><span class="stat-val" id="stStatus">Not Loaded</span></div>
+          </div>
+ 
+          <div class="tape-label">
+            Infinite Tape
+            <span class="tape-sublabel">← scroll to explore ±∞ →</span>
+          </div>
+          <div class="tape-shell">
+            <span class="inf-dot left">···</span>
+            <div class="tape-row" id="tape"></div>
+            <span class="inf-dot right">···</span>
+          </div>
+          <div class="scroll-row">
+            <span class="inf-lbl">−∞</span>
+            <input type="range" id="tscroll" min="-20" max="40" step="1" value="0" />
+            <span class="inf-lbl">+∞</span>
+          </div>
+ 
+          <div class="section-lbl">Last Action</div>
+          <div class="logbox" id="log">Load a machine to begin.</div>
+        </div>
+      </div>
+ 
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">Transition Table <span class="card-sub">(yellow = active row)</span></div>
+          <div class="tbl-wrap">
+            <table id="ttbl">
+              <thead>
+                <tr><th>From State</th><th>Read</th><th>To State</th><th>Write</th><th>Move</th></tr>
+              </thead>
+              <tbody id="ttbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">Execution History</div>
+          <div class="histbox" id="hist">No history yet.</div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- CUSTOM TAB -->
+    <section class="tab-panel" id="tab-custom">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">Machine Configuration</div>
+          <label>Start State</label>
+          <input type="text" id="cStart" value="q0" />
+          <label>Accept State</label>
+          <input type="text" id="cAcc" value="q_accept" />
+          <label>Reject State</label>
+          <input type="text" id="cRej" value="q_reject" />
+          <label>Input String</label>
+          <input type="text" id="cInp" placeholder="Input for your machine" />
+          <div class="btn-row">
+            <button class="btn gold" id="buildBtn">Build &amp; Simulate →</button>
+          </div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-head">Add Transition Rule</div>
+          <div class="five-grid">
+            <div><label>From</label><input type="text" id="cFrom" placeholder="q0" /></div>
+            <div><label>Read</label><input type="text" id="cRead" placeholder="a" maxlength="1" /></div>
+            <div><label>To</label><input type="text" id="cTo" placeholder="q1" /></div>
+            <div><label>Write</label><input type="text" id="cWrite" placeholder="X" maxlength="1" /></div>
+            <div><label>Move</label><select id="cMv"><option>R</option><option>L</option><option>S</option></select></div>
+          </div>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn blue" id="addRuleBtn">Add Rule</button>
+            <button class="btn outline" id="clearRulesBtn">Clear All</button>
+          </div>
+          <div class="rules-box" id="rulesBox">No transitions added yet.</div>
+        </div>
+      </div>
+    </section>
+ 
+    <!-- DECIDABILITY TAB -->
+    <section class="tab-panel" id="tab-dec">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head">Decidability Visualizer</div>
+          <p class="card-intro">Analyze your machine's behavior and explore foundational computability theory.</p>
+          <div class="btn-row" style="flex-wrap:wrap;gap:8px">
+            <button class="btn blue" id="analyzeBtn">Analyze Current Run</button>
+            <button class="btn gold" id="haltBtn">Halting Problem</button>
+            <button class="btn blue" id="recogBtn">Recognizable vs Decidable</button>
+            <button class="btn outline" id="mapBtn">Mapping Reductions</button>
+          </div>
+          <div class="dec-out" id="decOut">Click a button above to explore a concept.</div>
+        </div>
+ 
+        <div class="card">
+          <div class="card-head">Core Concepts</div>
+          <div class="concept-list">
+            <div class="concept accept">
+              <div class="concept-title">Decidable</div>
+              <div class="concept-body">A Turing Machine halts on every input with accept or reject. The language is recursive. Example: aⁿbⁿcⁿ is decidable.</div>
+            </div>
+            <div class="concept blue-c">
+              <div class="concept-title">Recognizable (RE)</div>
+              <div class="concept-body">A TM accepts strings in the language, but for strings outside it may loop forever. Every decidable language is also recognizable.</div>
+            </div>
+            <div class="concept reject">
+              <div class="concept-title">Undecidable</div>
+              <div class="concept-body">No TM can correctly solve the problem for all inputs. Even with unlimited time, no algorithm exists.</div>
+            </div>
+            <div class="concept warn">
+              <div class="concept-title">Halting Problem</div>
+              <div class="concept-body">Given any TM M and input w, does M halt on w? Proven undecidable by Turing (1936) via diagonalization — the most famous undecidable problem.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+ 
+  </main>
+ 
+  <footer class="footer">
+    <p>Turing Machine Simulator &mdash; Theory of Computation Interactive Project</p>
+  </footer>
+ 
+  <script src="script.js"></script>
+</body>
+</html>
